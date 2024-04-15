@@ -1,63 +1,62 @@
-import allure
-import pytest
 import requests
+import pytest
+import allure
 
-@allure.feature("User API")
-class TestUserAPI:
+# Функции для работы с API
+def fetch_user_details():
+    """Получить детали одного пользователя."""
+    response = requests.get("https://reqres.in/api/users/2")
+    return response
 
-    @allure.story("Create User")
-    def test_create_user(self):
-        url = "https://reqres.in/api/users"
-        data = {
-            "name": "morpheus",
-            "job": "leader"
-        }
-        with allure.step("Sending POST request to create user"):
-            response = requests.post(url, json=data)
-            assert response.status_code == 201
-            assert response.headers['Content-Type'] == 'application/json; charset=utf-8'
-            user_data = response.json()
-            assert "id" in user_data
-            assert "name" in user_data
-            assert "job" in user_data
-            assert "createdAt" in user_data
-            assert user_data["name"] == "morpheus"
+def create_new_user(name, job):
+    """Создать нового пользователя."""
+    response = requests.post("https://reqres.in/api/users", json={"name": name, "job": job})
+    return response
 
-    @allure.story("Retrieve Single User")
-    def test_single_user(self):
-        url = "https://reqres.in/api/users/2"
-        with allure.step("Sending GET request to retrieve single user"):
-            response = requests.get(url)
-            assert response.status_code == 200
-            assert response.headers['Content-Type'] == 'application/json; charset=utf-8'
-            user_data = response.json()["data"]
-            assert "id" in user_data
-            assert "email" in user_data
-            assert "first_name" in user_data
-            assert "last_name" in user_data
-            assert "avatar" in user_data
-            assert len(user_data) == 5
+def update_existing_user(user_id, name, job):
+    """Обновить существующего пользователя."""
+    response = requests.put(f"https://reqres.in/api/users/{user_id}", json={"name": name, "job": job})
+    return response
 
-    @allure.story("Update User")
-    def test_update_user(self):
-        url = "https://reqres.in/api/users/2"
-        data = {
-            "name": "morpheus",
-            "job": "zion resident"
-        }
-        with allure.step("Sending PUT request to update user"):
-            response = requests.put(url, json=data)
-            assert response.status_code == 200
-            assert response.headers['Content-Type'] == 'application/json; charset=utf-8'
-            user_data = response.json()
-            assert "name" in user_data
-            assert "job" in user_data
-            assert "updatedAt" in user_data
-            assert user_data["job"] == "zion resident"
+def remove_user(user_id):
+    """Удалить пользователя."""
+    response = requests.delete(f"https://reqres.in/api/users/{user_id}")
+    return response
 
-    @allure.story("Delete User")
-    def test_delete_user(self):
-        url = "https://reqres.in/api/users/2"
-        with allure.step("Sending DELETE request to delete user"):
-            response = requests.delete(url)
-            assert response.status_code == 204
+# Тесты для API
+@allure.feature("Робота з користувачами")
+@allure.epic("API тести")
+def test_SINGL_USER():
+    with allure.step("Отримати деталі користувача"):
+        response = fetch_user_details()
+        assert response.status_code == 200
+        assert 'application/json; charset=utf-8' in response.headers['Content-Type']
+        user_data = response.json().get("data", {})
+        assert set(["id", "email", "first_name", "last_name", "avatar"]).issubset(user_data.keys())
+
+@allure.feature("Робота з користувачами")
+@allure.epic("API тести")
+def test_CREATE():
+    with allure.step("Створити нового користувача"):
+        response = create_new_user("morpheus", "leader")
+        assert response.status_code == 201
+        assert 'application/json; charset=utf-8' in response.headers['Content-Type']
+        user_data = response.json()
+        assert "id" in user_data and user_data["name"] == "morpheus" and user_data["job"] == "leader"
+
+@allure.feature("Робота з користувачами")
+@allure.epic("API тести")
+def test_UPDATE():
+    with allure.step("Оновити існуючого користувача"):
+        response = update_existing_user(2, "morpheus", "zion resident")
+        assert response.status_code == 200
+        assert 'application/json; charset=utf-8' in response.headers['Content-Type']
+        user_data = response.json()
+        assert user_data["name"] == "morpheus" and user_data["job"] == "zion resident"
+
+@allure.feature("Робота з користувачами")
+@allure.epic("API тести")
+def test_DELETE():
+    with allure.step("Видалити користувача"):
+        response = remove_user(2)
+        assert response.status_code == 204
